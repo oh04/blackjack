@@ -14,7 +14,7 @@ public class BlackjackApp{
             try{
                 player = PlayerSave.load(savePath);
             }catch(IOException | IllegalArgumentException e){
-                System.out.println("Save file couldn't be loaded.");
+                System.out.println("Save file couldn't be loaded: " + e.getMessage());
                 input.close();
                 return;
             }
