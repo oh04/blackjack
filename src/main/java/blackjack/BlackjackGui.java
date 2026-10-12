@@ -8,11 +8,17 @@ import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import javax.swing.JButton;
 import javax.swing.JTextField;
+import java.nio.file.Path;
+import java.nio.file.Files;
+import java.io.IOException;
+import javax.swing.JOptionPane;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 
 public class BlackjackGui{
 
-    private final BlackjackGame game = new BlackjackGame(10000, false);
+    private final BlackjackGame game;
     private final JLabel balanceLabel = new JLabel("Balance: $100.00");
     private final JLabel dealerCardsLabel = new JLabel("Dealer cards:-");
     private final JLabel dealerScoreLabel = new JLabel("Dealer score:-");
@@ -24,14 +30,47 @@ public class BlackjackGui{
     private final JButton hitButton = new JButton("Hit");
     private final JButton standButton = new JButton("Stand");
     private final JButton doubleButton = new JButton("Double down");
+    private final Path savePath = Path.of("player.properties");
+
+    public BlackjackGui() throws IOException{
+        Player player;
+        if(Files.exists(savePath)){
+            player = PlayerSave.load(savePath);
+        }else{
+            player = new Player(10000);
+        }
+        game = new BlackjackGame(player, false);
+    }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {BlackjackGui gui = new BlackjackGui();gui.createAndShowWindow();});
+        SwingUtilities.invokeLater(() -> {
+            try{
+                BlackjackGui gui = new BlackjackGui();gui.createAndShowWindow();
+            }catch(IOException | IllegalArgumentException e){
+                JOptionPane.showMessageDialog(null, "Could not load player: " + e.getMessage(), "Load error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
     }
 
     private void createAndShowWindow(){
         JFrame frame = new JFrame("Blackjack");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                if(game.getState() == BlackjackGame.RoundState.PLAYER_TURN){
+                    JOptionPane.showMessageDialog(null, "Finish the current round before closing.");
+                    return;
+                }else{
+                    try{
+                        PlayerSave.save(game.getPlayer(), savePath);
+                        frame.dispose();
+                    }catch(IOException e){
+                        JOptionPane.showMessageDialog(null, "Error saving: " + e);
+                    }
+                }
+            }
+        });
         JPanel panel = new JPanel();
         panel.add(balanceLabel);
         frame.add(panel, BorderLayout.NORTH);
