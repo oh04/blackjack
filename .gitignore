@@ -1,0 +1,7 @@
+target/
+out/
+*.class
+.DS_Store
+/player.properties
+/player-save-check.properties
+/invalid-player-save-check.properties
