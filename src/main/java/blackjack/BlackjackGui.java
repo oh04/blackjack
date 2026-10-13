@@ -14,6 +14,7 @@ import java.io.IOException;
 import javax.swing.JOptionPane;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import javax.swing.Timer;
 
 
 public class BlackjackGui{
@@ -31,6 +32,7 @@ public class BlackjackGui{
     private final JButton standButton = new JButton("Stand");
     private final JButton doubleButton = new JButton("Double down");
     private final Path savePath = Path.of("player.properties");
+    private Timer dealerTimer;
 
     public BlackjackGui() throws IOException{
         Player player;
@@ -58,7 +60,7 @@ public class BlackjackGui{
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent event) {
-                if(game.getState() == BlackjackGame.RoundState.PLAYER_TURN){
+                if(game.getState() == BlackjackGame.RoundState.PLAYER_TURN || game.getState() == BlackjackGame.RoundState.DEALER_TURN){
                     JOptionPane.showMessageDialog(null, "Finish the current round before closing.");
                     return;
                 }else{
@@ -107,16 +109,22 @@ public class BlackjackGui{
             }
         });
         hitButton.addActionListener(event -> {
-            game.hit();
+            game.hit(true);
             refreshView();
+            if(game.getState() == BlackjackGame.RoundState.DEALER_TURN){
+                runDealerAnimation();
+            }
         });
         standButton.addActionListener(event -> {
-            game.stand();
-            refreshView();
+            game.beginDealerTurn();
+            runDealerAnimation();
         });
         doubleButton.addActionListener(event -> {
-            game.doubleDown();
+            game.doubleDown(true);
             refreshView();
+            if(game.getState() == BlackjackGame.RoundState.DEALER_TURN){
+                runDealerAnimation();
+            }
         });
         refreshView();
         frame.setVisible(true);
@@ -130,6 +138,10 @@ public class BlackjackGui{
             dealerCardsLabel.setText("Dealer's cards: " + game.getDealer().getUpCard() + ", [Hidden card]");
             dealerScoreLabel.setText("Dealer score: hidden");
             statusLabel.setText("Your turn");
+        }else if(game.getState() == BlackjackGame.RoundState.DEALER_TURN){
+            dealerCardsLabel.setText("Dealer's cards: " + game.getDealer().getHand());
+            dealerScoreLabel.setText("Dealer score: " + game.getDealer().getHand().getScore());
+            statusLabel.setText("Dealer's turn...");
         }else if(game.getState() == BlackjackGame.RoundState.ROUND_OVER){
             dealerCardsLabel.setText("Dealer's cards: " + game.getDealer().getHand());
             dealerScoreLabel.setText("Dealer score: " + game.getDealer().getHand().getScore());
@@ -141,14 +153,28 @@ public class BlackjackGui{
         }
 
         boolean playerTurn = game.getState() == BlackjackGame.RoundState.PLAYER_TURN;
+        boolean roundActive = playerTurn || game.getState() == BlackjackGame.RoundState.DEALER_TURN;
         hitButton.setEnabled(playerTurn);
         standButton.setEnabled(playerTurn);
         doubleButton.setEnabled(game.canDoubleDown());
-        dealButton.setEnabled(!playerTurn && game.getPlayer().getBalanceCents() >= 2);
-        betField.setEnabled(!playerTurn);
+        dealButton.setEnabled(!roundActive && game.getPlayer().getBalanceCents() >= 2);
+        betField.setEnabled(!roundActive);
     }
 
     private static String formatMoney(int cents){
         return String.format("$%d.%02d", cents / 100, cents % 100);
+    }
+
+    private void runDealerAnimation(){
+        refreshView();
+        dealerTimer = new Timer(700, event -> {
+            game.stepDealerTurn();
+            refreshView();
+
+            if (game.getState() == BlackjackGame.RoundState.ROUND_OVER) {
+                dealerTimer.stop();
+            }
+        });
+        dealerTimer.start();
     }
 }

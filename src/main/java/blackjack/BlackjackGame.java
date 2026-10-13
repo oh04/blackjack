@@ -2,7 +2,7 @@ package blackjack;
 
 public class BlackjackGame{
 
-    public enum RoundState{NOT_STARTED, PLAYER_TURN, ROUND_OVER};
+    public enum RoundState{NOT_STARTED, PLAYER_TURN, DEALER_TURN, ROUND_OVER};
     public enum RoundResult{PLAYER_WIN, DEALER_WIN, PUSH};
 
     private final Player player;
@@ -41,8 +41,8 @@ public class BlackjackGame{
     }
 
     public void startRound(int betCents, Deck roundDeck){
-        if(state == RoundState.PLAYER_TURN){
-            throw new IllegalStateException("Cannot start a new round during the player's turn");
+        if(state == RoundState.PLAYER_TURN || state == RoundState.DEALER_TURN){
+            throw new IllegalStateException("Cannot start a new round during the player or dealer's turn");
         }else{
             if(betCents <= 0 || betCents > player.getBalanceCents() || betCents % 2 == 1){
                 throw new IllegalArgumentException("Invalid bet");
@@ -80,6 +80,10 @@ public class BlackjackGame{
     }
 
     public void hit(){
+        hit(false);
+    }
+
+    public void hit(boolean animateDealer){
         if(state != RoundState.PLAYER_TURN){
             throw new IllegalStateException("Cannot hit unless player turn");
         }else{
@@ -87,7 +91,11 @@ public class BlackjackGame{
             if(player.getHand().getScore() > 21){
                 finishRound();
             }else if(player.getHand().getScore() == 21){
-                stand();
+                if(animateDealer){
+                    beginDealerTurn();
+                }else{
+                    stand();
+                }
             }
         }
     }
@@ -100,6 +108,10 @@ public class BlackjackGame{
     }
 
     public void doubleDown(){
+        doubleDown(false);
+    }
+
+    public void doubleDown(boolean animateDealer){
         if(!canDoubleDown()){
             throw new IllegalStateException("Player cannot double down");
         }
@@ -108,6 +120,8 @@ public class BlackjackGame{
         player.getHand().addCard(deck.draw());
         if(player.getHand().isBust()){
             finishRound();
+        }else if(animateDealer){
+            beginDealerTurn();   
         }else{
             stand();
         }
@@ -141,6 +155,26 @@ public class BlackjackGame{
             player.credit(currentBetCents + currentBetCents + (currentBetCents / 2));
         }else if(result == RoundResult.PLAYER_WIN){
             player.credit(currentBetCents + currentBetCents);
+        }
+    }
+
+    public void beginDealerTurn(){
+        if(state != RoundState.PLAYER_TURN){
+            throw new IllegalStateException();
+        }
+        state = RoundState.DEALER_TURN;
+    }
+
+    public void stepDealerTurn(){
+        if(state == RoundState.DEALER_TURN){
+            if(dealer.shouldHit()){
+                dealer.getHand().addCard(deck.draw());
+            }
+            if(!dealer.shouldHit()){
+                finishRound();
+            }
+        }else{
+            throw new IllegalStateException("Can't step dealer outside dealer turn");
         }
     }
 }

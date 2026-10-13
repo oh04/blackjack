@@ -191,4 +191,29 @@ class BlackjackGameTest {
         assertEquals(BlackjackGame.RoundState.PLAYER_TURN, game.getState());
         assertEquals(0, game.getPlayer().getStats().getRoundsPlayed());
     }
+
+    @Test
+    void dealerTurnAdvancesOneCardAtATime(){
+        BlackjackGame game = new BlackjackGame(10000, false);
+        Deck deck = new Deck(List.of(
+            new Card(Card.Suit.HEARTS, Card.Rank.TEN),
+            new Card(Card.Suit.SPADES, Card.Rank.TWO),
+            new Card(Card.Suit.CLUBS, Card.Rank.THREE),
+            new Card(Card.Suit.DIAMONDS, Card.Rank.KING),
+            new Card(Card.Suit.DIAMONDS, Card.Rank.FOUR),
+            new Card(Card.Suit.DIAMONDS, Card.Rank.QUEEN)
+        ));
+        game.startRound(1000, deck);
+        game.beginDealerTurn();
+        assertEquals(BlackjackGame.RoundState.DEALER_TURN, game.getState());
+        assertEquals(2, game.getDealer().getHand().size());
+        game.stepDealerTurn();
+        assertEquals(BlackjackGame.RoundState.DEALER_TURN, game.getState());
+        assertEquals(3, game.getDealer().getHand().size());
+        game.stepDealerTurn();
+        assertEquals(BlackjackGame.RoundState.ROUND_OVER, game.getState());
+        assertEquals(4, game.getDealer().getHand().size());
+        assertEquals(11000, game.getPlayer().getBalanceCents());
+        assertThrows(IllegalStateException.class, () -> game.stepDealerTurn());
+    }
 }
