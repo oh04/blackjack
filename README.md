@@ -4,6 +4,8 @@ A blackjack game built in Java.
 
 You can hit, stand, double down, and play multiple rounds. The dealer draws one card at a time, and your balance and win/loss/push stats are saved between sessions.
 
+![Blackjack game window](docs/screenshots/gameplay.png)
+
 ## Running it
 
 You need Java 21 or newer and Maven. From the project folder, run:
