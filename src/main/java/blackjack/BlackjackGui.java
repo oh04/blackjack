@@ -18,11 +18,14 @@ import javax.swing.Timer;
 import java.awt.Color;
 import java.awt.Font;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JScrollPane;
+import javax.swing.Box;
 
 
 public class BlackjackGui{
 
-    private final BlackjackGame game;
+    private BlackjackGame game;
     private final JLabel balanceLabel = new JLabel("Balance: $100.00");
     private final JLabel statsLabel = new JLabel("");
     private final JLabel dealerScoreLabel = new JLabel("Dealer score:-");
@@ -37,6 +40,7 @@ public class BlackjackGui{
     private Timer dealerTimer;
     private final JPanel dealerCardsPanel = new JPanel();
     private final JPanel playerCardsPanel = new JPanel();
+    private final JButton newProfileButton = new JButton("New Profile");
 
     public BlackjackGui() throws IOException{
         Player player;
@@ -94,20 +98,23 @@ public class BlackjackGui{
         tablePanel.setLayout(new BorderLayout(0, 15));
         dealerCardsPanel.setOpaque(false);
         playerCardsPanel.setOpaque(false);
-        tablePanel.add(dealerCardsPanel);
-        tablePanel.add(dealerScoreLabel);
-        tablePanel.add(playerCardsPanel);
-        tablePanel.add(playerScoreLabel);
-        tablePanel.add(statusLabel);
         frame.add(tablePanel, BorderLayout.CENTER);
         JPanel dealerSection = new JPanel(new BorderLayout(0, 8));
         dealerSection.setOpaque(false);
         dealerSection.add(dealerScoreLabel, BorderLayout.NORTH);
-        dealerSection.add(dealerCardsPanel, BorderLayout.CENTER);
+        JScrollPane dealerScroll = new JScrollPane(dealerCardsPanel, JScrollPane.VERTICAL_SCROLLBAR_NEVER, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        dealerScroll.setOpaque(false);
+        dealerScroll.getViewport().setOpaque(false);
+        dealerScroll.setBorder(BorderFactory.createEmptyBorder());
+        dealerSection.add(dealerScroll, BorderLayout.CENTER);
         JPanel playerSection = new JPanel(new BorderLayout(0, 8));
         playerSection.setOpaque(false);
         playerSection.add(playerScoreLabel, BorderLayout.NORTH);
-        playerSection.add(playerCardsPanel, BorderLayout.CENTER);
+        JScrollPane playerScroll = new JScrollPane(playerCardsPanel, JScrollPane.VERTICAL_SCROLLBAR_NEVER, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        playerScroll.setOpaque(false);
+        playerScroll.getViewport().setOpaque(false);
+        playerScroll.setBorder(BorderFactory.createEmptyBorder());
+        playerSection.add(playerScroll, BorderLayout.CENTER);
         JPanel handsPanel = new JPanel(new GridLayout(2, 1, 0, 20));
         handsPanel.setOpaque(false);
         handsPanel.add(dealerSection);
@@ -117,6 +124,8 @@ public class BlackjackGui{
         JPanel controlsPanel = new JPanel();
         controlsPanel.add(new JLabel("Bet (cents):"));
         controlsPanel.add(betField);
+        dealerCardsPanel.setLayout(new BoxLayout(dealerCardsPanel, BoxLayout.X_AXIS));
+        playerCardsPanel.setLayout(new BoxLayout(playerCardsPanel, BoxLayout.X_AXIS));
         hitButton.setEnabled(false);
         standButton.setEnabled(false);
         doubleButton.setEnabled(false);
@@ -124,6 +133,7 @@ public class BlackjackGui{
         controlsPanel.add(hitButton);
         controlsPanel.add(standButton);
         controlsPanel.add(doubleButton);
+        controlsPanel.add(newProfileButton);
         controlsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         frame.add(controlsPanel, BorderLayout.SOUTH);
         frame.setSize(800, 700);
@@ -157,6 +167,22 @@ public class BlackjackGui{
                 runDealerAnimation();
             }
         });
+        newProfileButton.addActionListener(event -> {
+            int choice = JOptionPane.showConfirmDialog(frame, "Reset your balance to $100.00 and clear all statistics?", "New Profile", JOptionPane.YES_NO_OPTION);
+
+            if (choice != JOptionPane.YES_OPTION) {
+                return;
+            }
+            BlackjackGame newGame = new BlackjackGame(new Player(10000), false);
+            try{
+                PlayerSave.save(newGame.getPlayer(), savePath);
+                game = newGame;
+                refreshView();
+
+            }catch(IOException e){
+                JOptionPane.showMessageDialog(frame, "Error saving: " + e);
+            }
+        });
         refreshView();
         frame.setVisible(true);
     }
@@ -175,7 +201,25 @@ public class BlackjackGui{
             statusLabel.setText("Dealer's turn...");
         }else if(game.getState() == BlackjackGame.RoundState.ROUND_OVER){
             dealerScoreLabel.setText("Dealer score: " + game.getDealer().getHand().getScore());
-            statusLabel.setText("Result: " + game.getResult());
+            switch(game.getResult()){
+                case PLAYER_WIN:
+                    if(game.getPlayer().getHand().getScore() == 21 && game.getPlayer().getHand().size() == 2){
+                        statusLabel.setText("Blackjack! You win.");
+                    }else{
+                        statusLabel.setText("You win.");
+                    }
+                    break;
+                case DEALER_WIN:
+                    if(game.getPlayer().getHand().getScore() > 21){
+                        statusLabel.setText("You busted. Dealer wins.");
+                    }else{
+                        statusLabel.setText("Dealer wins.");
+                    }
+                    break;
+                case PUSH:
+                    statusLabel.setText("Push. Your bet is returned.");
+                    break;
+            }
         }else{
             dealerScoreLabel.setText("Dealer score:-");
             statusLabel.setText("Place a bet to begin");
@@ -192,6 +236,8 @@ public class BlackjackGui{
         if(!roundActive && game.getPlayer().getBalanceCents() < 2){
             statusLabel.setText("Not enough funds for another round.");
         }
+
+        newProfileButton.setEnabled(!roundActive);
     }
 
     private static String formatMoney(int cents){
@@ -212,16 +258,19 @@ public class BlackjackGui{
     }
 
     private void updateCardPanel(JPanel panel, Hand hand, boolean hideSecondCard){
-    panel.removeAll();
-    for (int i = 0; i < hand.size(); i++){
-        if (hideSecondCard && i == 1) {
-            panel.add(new CardView());
-        } else {
-            panel.add(new CardView(hand.getCard(i)));
+        panel.removeAll();
+        for (int i = 0; i < hand.size(); i++){
+             if (i > 0) {
+                panel.add(Box.createHorizontalStrut(10));
+            }
+            if (hideSecondCard && i == 1) {
+                panel.add(new CardView());
+            } else {
+                panel.add(new CardView(hand.getCard(i)));
+            }
         }
+        
+        panel.revalidate();
+        panel.repaint();
     }
-
-    panel.revalidate();
-    panel.repaint();
-}
 }

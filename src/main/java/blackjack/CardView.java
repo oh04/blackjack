@@ -17,6 +17,8 @@ public class CardView extends JLabel{
         setFont(new Font(Font.SANS_SERIF, Font.BOLD, 26));
         setBorder(BorderFactory.createLineBorder(Color.GRAY));
         setPreferredSize(new Dimension(130, 100));
+        setMinimumSize(new Dimension(130, 100));
+        setMaximumSize(new Dimension(130, 100));
         if(card.getSuit() == Card.Suit.HEARTS || card.getSuit() == Card.Suit.DIAMONDS){
             setForeground(Color.RED);
         }
@@ -69,5 +71,7 @@ public class CardView extends JLabel{
         setFont(new Font(Font.SANS_SERIF, Font.BOLD, 26));
         setBorder(BorderFactory.createLineBorder(Color.GRAY));
         setPreferredSize(new Dimension(130, 100));
+        setMinimumSize(new Dimension(130, 100));
+        setMaximumSize(new Dimension(130, 100));
     }
 }

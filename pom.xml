@@ -41,7 +41,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>blackjack.BlackjackApp</mainClass>
+                            <mainClass>blackjack.BlackjackGui</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
