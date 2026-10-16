@@ -4,7 +4,7 @@ A blackjack game built in Java.
 
 You can hit, stand, double down, and play multiple rounds. The dealer draws one card at a time, and your balance and win/loss/push stats are saved between sessions.
 
-![Blackjack game window](docs/screenshots/gameplay.png)
+![Blackjack game window](docs.screenshots/gameplay.png)
 
 ## Running it
 
@@ -39,3 +39,5 @@ The JUnit tests cover ace scoring, blackjack, payouts, balance validation, doubl
 `BlackjackGame` handles rounds and payouts. `Card`, `Deck`, and `Hand` handle the cards and scoring. `Player` and `PlayerStats` track money and results, while `PlayerSave` reads and writes the save file.
 
 The Swing GUI and CLI use the same game logic. The GUI uses a Swing timer to pause between dealer draws without freezing the window.
+
+Earlier versions and manual checks are kept in [learning](learning/README.md).
